@@ -1,3 +1,21 @@
+document.addEventListener('DOMContentLoaded', (event) => {
+    const themeToggleBtn = document.getElementById('theme-toggle');
+    const lightIcon = document.getElementById('light-icon');
+    const darkIcon = document.getElementById('dark-icon');
+
+    themeToggleBtn.addEventListener('click', () => {
+        document.body.classList.toggle('light-theme');
+        if (document.body.classList.contains('light-theme')) {
+            lightIcon.style.display = 'block';
+            darkIcon.style.display = 'none';
+        } else {
+            lightIcon.style.display = 'none';
+            darkIcon.style.display = 'block';
+        }
+    });
+});
+
+
 let menuIcon = document.querySelector('#menu-icon');
 let navbar = document.querySelector('.navbar');
 let sections = document.querySelectorAll('section');
