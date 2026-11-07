@@ -1,0 +1,361 @@
+(() => {
+  "use strict";
+
+  const chapters = window.DSP_CHAPTERS.sort((a, b) => a.id - b.id);
+  const core = chapters.filter(chapter => chapter.id <= 13);
+  const tracks = ["Nền tảng", "Phổ và thuật toán", "Bộ lọc và ứng dụng", "Phụ lục"];
+  const titles = {
+    "tong-quan": "Tổng quan",
+    "cong-thuc": "Tra công thức",
+    "mo-phong": "Mô phỏng",
+    "tai-lieu": "Tài liệu và quy ước"
+  };
+  const pad = number => String(number).padStart(2, "0");
+  const escape = value => String(value ?? "").replace(/[&<>"']/g, char => ({
+    "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
+  })[char]);
+  const normalize = value => String(value ?? "").toLowerCase().normalize("NFD")
+    .replace(/\p{Diacritic}/gu, "").replace(/đ/g, "d");
+  const href = (chapter, topic) => `#chuong-${chapter.id}${topic === undefined ? "" : "/muc-" + topic}`;
+  const find = selector => document.querySelector(selector);
+  const main = find("#main");
+  const dialog = find("#search-dialog");
+  const searchInput = find("#search-input");
+  const navigation = find("#navigation");
+  const sidebar = find("#sidebar");
+  const menu = find(".menu-button");
+  const overlay = find(".menu-overlay");
+  const searchResults = find("#search-results");
+
+  const icons = {
+    "tong-quan": '<path d="M3 10l9-7 9 7v10h-6v-6H9v6H3z"/>',
+    "cong-thuc": '<path d="M7 4h11M7 20h11M7 4l7 8-7 8"/>',
+    "mo-phong": '<path d="M3 13h4l3-7 4 12 3-5h4"/>',
+    "tai-lieu": '<path d="M4 4h7v15H4zM13 4h7v15h-7z"/>'
+  };
+
+  const allTopics = chapters.flatMap(chapter => chapter.topics.map((topic, index) => ({ chapter, topic, index })));
+  const formulas = allTopics.filter(({topic}) => topic.formula);
+  const readProgress = () => {
+    try {
+      const stored = JSON.parse(localStorage.getItem("dsp501-completed-v1") || "[]");
+      return new Set(Array.isArray(stored) ? stored.filter(id => core.some(chapter => chapter.id === id)) : []);
+    } catch {
+      return new Set();
+    }
+  };
+  const completed = readProgress();
+  let route = "";
+  let disposeLab = () => {};
+
+  function setMenu(open) {
+    sidebar.classList.toggle("is-open", open);
+    menu.setAttribute("aria-expanded", String(open));
+    overlay.hidden = !open;
+  }
+
+  function renderNavigation() {
+    const savedScroll = navigation.scrollTop;
+    const links = Object.entries(titles).map(([key, title]) => {
+      const selected = route === key ? ' aria-current="page"' : "";
+      return `<a class="nav-link" href="#${key}"${selected}><span class="nav-index"><svg viewBox="0 0 24 24" aria-hidden="true">${icons[key]}</svg></span>${title}</a>`;
+    }).join("");
+    const groups = tracks.map(group => {
+      const items = chapters.filter(chapter => chapter.group === group).map(chapter => {
+        const selected = route === "chuong-" + chapter.id ? ' aria-current="page"' : "";
+        return `<a class="nav-link" href="${href(chapter)}"${selected}><span class="nav-index">${pad(chapter.id)}</span><span>${escape(chapter.title)}</span>${completed.has(chapter.id) ? '<span class="nav-check" aria-label="Đã học">✓</span>' : ""}</a>`;
+      }).join("");
+      return `<div class="nav-group"><p class="nav-heading">${escape(group)}</p>${items}</div>`;
+    }).join("");
+    navigation.innerHTML = `<div class="nav-group"><p class="nav-heading">Không gian học</p>${links}</div>${groups}`;
+    navigation.scrollTop = savedScroll;
+    find("#progress").value = completed.size;
+    find("#progress-count").textContent = `${completed.size}/${core.length}`;
+  }
+
+  function signalIllustration() {
+    const value = t => Math.cos(2 * Math.PI * (2.9 * t - .09)) * (.54 + .42 * Math.sin(Math.PI * t));
+    const x = t => 20 + 360 * t;
+    const y = t => 104 - 69 * value(t);
+    const grid = [...Array(9)].map((_, index) => {
+      const column = x(index / 8);
+      return `<line x1="${column}" x2="${column}" y1="23" y2="181"/>`;
+    }).join("") + [25, 64, 104, 144, 181].map(row => `<line x1="20" x2="380" y1="${row}" y2="${row}"/>`).join("");
+    const wave = Array.from({ length: 181 }, (_, index) => {
+      const t = index / 180;
+      return `${x(t).toFixed(1)},${y(t).toFixed(1)}`;
+    }).join(" ");
+    const samples = Array.from({ length: 23 }, (_, index) => {
+      const t = index / 22;
+      return `<line x1="${x(t)}" x2="${x(t)}" y1="104" y2="${y(t)}"/><circle cx="${x(t)}" cy="${y(t)}" r="3.1"/>`;
+    }).join("");
+    return `<figure class="hero-figure">
+      <svg viewBox="0 0 400 204" role="img" aria-label="Sóng liên tục và các chấm biểu diễn mẫu rời rạc">
+        <g class="hero-grid">${grid}</g><polyline class="hero-wave" points="${wave}"/><g class="hero-samples">${samples}</g>
+      </svg>
+      <figcaption><span>x(t) · LIÊN TỤC</span><span>x[n] · RỜI RẠC</span></figcaption>
+    </figure>`;
+  }
+
+  function home() {
+    const next = core.find(chapter => !completed.has(chapter.id));
+    const groups = tracks.slice(0, 3).map((group, index) => {
+      const links = core.filter(chapter => chapter.group === group).map(chapter => `
+        <a class="track-link" href="${href(chapter)}"><span>${pad(chapter.id)}</span><span>${escape(chapter.title)}</span>
+        <span aria-hidden="true">${completed.has(chapter.id) ? "✓" : "↗"}</span></a>`).join("");
+      return `<article class="track"><div class="track-top"><span class="track-number">${pad(index + 1)}</span><h3>${group}</h3></div>${links}</article>`;
+    }).join("");
+    return `<section class="hero">
+      <div><div class="hero-kicker">Giáo trình DSP · Tiếng Việt</div>
+      <h1>Hiểu tín hiệu.<br><span>Làm chủ công thức.</span></h1>
+      <p>Học xử lý tín hiệu số từ lấy mẫu đến bộ lọc thích nghi, theo giáo trình của Proakis và Manolakis.</p>
+      <div class="actions"><a class="button primary" href="${next ? href(next) : "#cong-thuc"}">${!next ? "Ôn công thức" : completed.size ? "Tiếp tục học" : "Bắt đầu chương 1"} <span aria-hidden="true">→</span></a>
+      <a class="button secondary" href="#mo-phong/lay-mau">Mở mô phỏng</a></div></div>
+      ${signalIllustration()}
+    </section>
+    <div class="facts"><div class="fact"><strong>${core.length}</strong><span>chương giáo trình</span></div>
+      <div class="fact"><strong>${formulas.length}</strong><span>mục công thức</span></div>
+      <div class="fact"><strong>${window.DSP_LABS.catalog.length}</strong><span>mô phỏng tương tác</span></div>
+    </div>
+    <section aria-labelledby="roadmap"><div class="section-title"><div><div class="eyebrow">Lộ trình học</div><h2 id="roadmap">Từ nền tảng đến ứng dụng</h2></div><a class="text-link" href="#cong-thuc">Tra công thức <span aria-hidden="true">↗</span></a></div>
+      <div class="track-grid">${groups}</div>
+    </section>
+    <div class="resource-row"><p>Sinh số ngẫu nhiên, bảng hệ số FIR và tài liệu tham khảo.</p><a class="text-link" href="#tai-lieu">Xem tài liệu <span aria-hidden="true">↗</span></a></div>`;
+  }
+
+  function pageHead(kicker, title, description) {
+    return `<div class="page-head"><div class="eyebrow">${escape(kicker)}</div><h1>${escape(title)}</h1><p>${escape(description)}</p></div>`;
+  }
+
+  function chapterView(chapter) {
+    const topics = chapter.topics.map((topic, index) => `<article id="muc-${index}" class="topic">
+      <h3>${escape(topic.title)}</h3><p>${escape(topic.body)}</p>
+      ${topic.formula ? `<code class="formula">${escape(topic.formula)}</code>` : ""}
+      ${topic.note ? `<p class="note">${escape(topic.note)}</p>` : ""}
+    </article>`).join("");
+    const quickLinks = chapter.topics.map((topic, index) => `<a href="${href(chapter, index)}">${escape(topic.title)}</a>`).join("");
+    const quizzes = chapter.quiz.map((question, index) => `<article class="quiz" data-quiz="${index}">
+      <h3>${index + 1}. ${escape(question.q)}</h3>
+      <div class="quiz-options" role="group" aria-label="Đáp án câu ${index + 1}">${question.options.map((option, optionIndex) =>
+        `<button type="button" class="quiz-option" data-answer="${optionIndex}" aria-pressed="false">${escape(option)}</button>`).join("")}</div>
+      <p class="quiz-feedback" aria-live="polite" hidden></p>
+    </article>`).join("");
+    const previous = chapters.find(item => item.id === chapter.id - 1);
+    const next = chapters.find(item => item.id === chapter.id + 1);
+    const topicLinks = [1, 2, 6, 7, 8].includes(chapter.id) ? {
+      1: ["lay-mau", "Thử mô phỏng lấy mẫu"],
+      2: ["tich-chap", "Thử mô phỏng tích chập"],
+      6: ["lay-mau", "Thử mô phỏng lấy mẫu"],
+      7: ["dft", "Thử mô phỏng phổ DFT"],
+      8: ["dft", "Quan sát kết quả DFT"]
+    }[chapter.id] : null;
+    return `<div class="page-head">
+      <div class="eyebrow">${chapter.id <= 13 ? "Chương " + pad(chapter.id) : "Phụ lục"} · ${escape(chapter.group)}</div>
+      <h1>${escape(chapter.title)}</h1><p>${escape(chapter.intro)}</p>
+      <div class="chapter-meta"><span>${escape(chapter.en)}</span><span>Giáo trình, trang ${escape(chapter.pages)}</span></div>
+      ${topicLinks ? `<div class="actions"><a class="button secondary" href="#mo-phong/${topicLinks[0]}">${topicLinks[1]} <span aria-hidden="true">↗</span></a></div>` : ""}
+    </div>
+    <div class="chapter-layout"><div>
+      <section class="lesson-section"><h2>Kiến thức và công thức</h2>${topics}</section>
+      <section class="lesson-section" id="vi-du"><h2>Ví dụ giải từng bước</h2><div class="example"><h3>${escape(chapter.example.title)}</h3>
+        <ol>${chapter.example.steps.map(step => `<li>${escape(step)}</li>`).join("")}</ol></div></section>
+      <section class="lesson-section pitfalls" id="loi"><h2>Chỗ dễ nhầm</h2><ul>${chapter.pitfalls.map(pitfall => `<li>${escape(pitfall)}</li>`).join("")}</ul></section>
+      <section class="lesson-section" id="kiem-tra"><h2>Tự kiểm tra</h2>${quizzes}</section>
+      <div class="chapter-actions">
+        <a class="button secondary" href="${previous ? href(previous) : "#tong-quan"}"><span aria-hidden="true">←</span> ${previous ? "Mục trước" : "Tổng quan"}</a>
+        ${chapter.id <= 13 ? `<button type="button" id="mark-complete" class="button secondary" aria-pressed="${completed.has(chapter.id)}">${completed.has(chapter.id) ? "✓ Đã học" : "Đánh dấu đã học"}</button>` : ""}
+        <a class="button primary" href="${next ? href(next) : "#tai-lieu"}">${next ? "Mục tiếp theo" : "Tài liệu"} <span aria-hidden="true">→</span></a>
+      </div>
+    </div><aside class="lesson-index" aria-label="Trong chương"><p class="eyebrow">Trong chương</p>
+      ${quickLinks}<a href="#chuong-${chapter.id}/vi-du">Ví dụ giải từng bước</a><a href="#chuong-${chapter.id}/kiem-tra">Tự kiểm tra</a>
+    </aside></div>`;
+  }
+
+  function attachChapter(chapter) {
+    main.querySelectorAll(".quiz-option").forEach(button => button.addEventListener("click", () => {
+      const item = button.closest(".quiz");
+      const question = chapter.quiz[Number(item.dataset.quiz)];
+      const correct = Number(button.dataset.answer) === question.answer;
+      item.querySelectorAll(".quiz-option").forEach(option => {
+        option.setAttribute("aria-pressed", String(option === button));
+        delete option.dataset.state;
+      });
+      button.dataset.state = correct ? "correct" : "wrong";
+      const feedback = item.querySelector(".quiz-feedback");
+      feedback.dataset.state = button.dataset.state;
+      feedback.textContent = (correct ? "Đúng. " : "Chưa đúng. ") + question.why;
+      feedback.hidden = false;
+    }));
+    find("#mark-complete")?.addEventListener("click", event => {
+      if (completed.has(chapter.id)) completed.delete(chapter.id);
+      else completed.add(chapter.id);
+      try { localStorage.setItem("dsp501-completed-v1", JSON.stringify([...completed])); } catch {}
+      const done = completed.has(chapter.id);
+      event.currentTarget.textContent = done ? "✓ Đã học" : "Đánh dấu đã học";
+      event.currentTarget.setAttribute("aria-pressed", String(done));
+      renderNavigation();
+    });
+  }
+
+  function formulaBank() {
+    const options = chapters.map(chapter => `<option value="${chapter.id}">${pad(chapter.id)} · ${escape(chapter.title)}</option>`).join("");
+    return pageHead("Tra nhanh", "Sổ công thức", "Lọc theo chương hoặc gõ một thuật ngữ. Mỗi công thức dẫn về phần giải thích và điều kiện áp dụng.") +
+      `<div class="filter-bar"><label>Từ khóa<input type="search" id="formula-query" placeholder="VD: Nyquist, tích chập, LPC…"></label>
+      <label>Chương<select id="formula-chapter"><option value="">Tất cả</option>${options}</select></label></div>
+      <p class="eyebrow" id="formula-count" aria-live="polite"></p><div class="formula-grid" id="formula-results"></div>`;
+  }
+
+  function attachFormulaBank() {
+    const field = find("#formula-query");
+    const chapterField = find("#formula-chapter");
+    const renderCards = () => {
+      const tokens = normalize(field.value).trim().split(/\s+/).filter(Boolean);
+      const found = formulas.filter(({ chapter, topic }) => {
+        const content = normalize([chapter.title, chapter.en, topic.title, topic.body, topic.formula, topic.note].join(" "));
+        return (!chapterField.value || chapter.id === Number(chapterField.value)) && tokens.every(token => content.includes(token));
+      });
+      find("#formula-count").textContent = `${found.length} mục công thức`;
+      find("#formula-results").innerHTML = found.length ? found.map(({ chapter, topic, index }) => `<article class="formula-card">
+        <div class="eyebrow">${pad(chapter.id)} · ${escape(chapter.title)}</div><h2>${escape(topic.title)}</h2>
+        <code class="formula">${escape(topic.formula)}</code><a class="text-link" href="${href(chapter, index)}">Mở phần giải thích <span aria-hidden="true">↗</span></a></article>`).join("") :
+        '<p>Không có công thức khớp. Thử từ khóa ngắn hơn hoặc chọn tất cả chương.</p>';
+    };
+    field.addEventListener("input", renderCards);
+    chapterField.addEventListener("change", renderCards);
+    renderCards();
+  }
+
+  function labView(currentLab) {
+    return pageHead("Thực hành", "Phòng mô phỏng", "Thay đổi tham số và quan sát kết quả. Ba thí nghiệm nối công thức với cách tín hiệu thực sự thay đổi.") +
+      `<nav class="tabs" aria-label="Thí nghiệm">${window.DSP_LABS.catalog.map(lab =>
+        `<a class="tab" href="#mo-phong/${lab.id}"${lab.id === currentLab.id ? ' aria-current="page"' : ""}>${lab.name}</a>`).join("")}</nav><section id="lab-panel" class="lab-panel"></section>`;
+  }
+
+  function sources() {
+    return pageHead("Nguồn và phạm vi", "Tài liệu và quy ước", "Sổ tay tóm lược kiến thức theo đúng thứ tự của bản giáo trình trong thư mục DSP501. Số trang ghi trong mỗi chương là số trang in trên sách.") + `
+      <section class="source-panel"><h2>Giáo trình chính</h2>
+      <p><cite>Digital Signal Processing: Principles, Algorithms, and Applications</cite> · John G. Proakis và Dimitris G. Manolakis, ấn bản 4.</p>
+      <p>Tra chương 1–13 theo mục lục. Phụ lục sinh số ngẫu nhiên bắt đầu ở trang 981 và bảng hệ số FIR ở trang 987. Danh mục tài liệu tham khảo của sách bắt đầu ở trang 993; chỉ mục thuật ngữ bắt đầu ở trang 1007.</p>
+      <p>Nội dung trên web là phần diễn giải, công thức và ví dụ tự soạn. Dùng sách gốc để tra chứng minh dài, bảng hệ số và bộ bài tập đầy đủ.</p></section>
+      <section class="source-panel"><h2>Phụ lục</h2><ul>${chapters.filter(chapter => chapter.id > 13).map(chapter => `<li><a class="text-link" href="${href(chapter)}">${escape(chapter.title)}</a> · trang ${escape(chapter.pages)}</li>`).join("")}</ul></section>
+      <section class="source-panel"><h2>Quy ước đọc công thức</h2><ul>
+      <li>x(t) dùng thời gian liên tục; x[n] hoặc x(n) dùng chỉ số mẫu nguyên.</li>
+      <li>F dùng Hz, f dùng vòng/mẫu, Ω dùng radian/giây và ω dùng radian/mẫu.</li>
+      <li>j² = −1. Dấu * có thể chỉ liên hợp hoặc tích chập tùy biểu thức; công thức trong mỗi chương ghi rõ ngữ cảnh.</li>
+      <li>Tùy sách hoặc thư viện, hệ số 1/N của DFT và chuẩn hóa sinc có thể đặt khác nhau. Mỗi phần giữ một cặp định nghĩa nhất quán.</li></ul></section>`;
+  }
+
+  const searchIndex = chapters.flatMap(chapter => [
+    { title: chapter.title, sub: `Chương ${pad(chapter.id)} · ${chapter.en}`, target: href(chapter), body: chapter.intro },
+    ...chapter.topics.map((topic, index) => ({
+      title: topic.title, sub: `Mục ${pad(chapter.id)} · ${chapter.title}`, target: href(chapter, index),
+      body: [topic.body, topic.formula, topic.note].join(" ")
+    }))
+  ]).concat(window.DSP_LABS.catalog.map(lab => ({ title: lab.name, sub: "Phòng mô phỏng", body: lab.keywords, target: "#mo-phong/" + lab.id })))
+    .map(item => ({ ...item, titleKey: normalize(item.title), terms: normalize([item.title, item.sub, item.body].join(" ")) }));
+
+  function renderSearch() {
+    const query = normalize(searchInput.value).trim();
+    if (!query) {
+      searchResults.innerHTML = "<p>Nhập tên chương, từ khóa hoặc ký hiệu. Ví dụ: <strong>mẫu trên chu kỳ</strong>, <strong>z-transform</strong>, <strong>FFT</strong>.</p>";
+      return;
+    }
+    const tokens = query.split(/\s+/).filter(Boolean);
+    const ranked = searchIndex.filter(item => tokens.every(token => item.terms.includes(token)))
+      .sort((a, b) => score(b) - score(a)).slice(0, 12);
+    function score(item) {
+      return (item.titleKey.includes(query) ? 20 : 0) + tokens.filter(token => item.titleKey.includes(token)).length;
+    }
+    searchResults.innerHTML = ranked.length ? ranked.map(item => `<a class="search-result" href="${item.target}"><strong>${escape(item.title)}</strong><small>${escape(item.sub)}</small></a>`).join("") :
+      "<p>Chưa có kết quả. Thử một từ khóa ngắn hơn như DFT hoặc bộ lọc.</p>";
+  }
+
+  function openSearch() {
+    if (dialog.open) return;
+    searchInput.value = "";
+    renderSearch();
+    dialog.showModal();
+    searchInput.focus();
+  }
+
+  function render() {
+    disposeLab();
+    disposeLab = () => {};
+    const [requested, sub] = location.hash.slice(1).split("/");
+    const match = requested?.match(/^chuong-(\d+)$/);
+    const chapter = match ? chapters.find(item => item.id === Number(match[1])) : null;
+    const previousRoute = route;
+    route = chapter ? "chuong-" + chapter.id : Object.hasOwn(titles, requested) ? requested : "tong-quan";
+    if (chapter) {
+      if (previousRoute !== route) {
+        main.innerHTML = chapterView(chapter);
+        attachChapter(chapter);
+      }
+    } else if (route === "cong-thuc") {
+      main.innerHTML = formulaBank();
+      attachFormulaBank();
+    } else if (route === "mo-phong") {
+      const current = window.DSP_LABS.catalog.find(lab => lab.id === sub) || window.DSP_LABS.catalog[0];
+      main.innerHTML = labView(current);
+      disposeLab = window.DSP_LABS.mount(current.id, find("#lab-panel"));
+    } else {
+      main.innerHTML = route === "tai-lieu" ? sources() : home();
+    }
+    const label = chapter ? `${chapter.id <= 13 ? "Chương " + pad(chapter.id) : "Phụ lục"}` : titles[route];
+    find("#breadcrumb").innerHTML = `DSP501 <span>/</span> ${escape(label)}`;
+    document.title = `${chapter ? chapter.title : titles[route]} · Sổ tay DSP`;
+    renderNavigation();
+    setMenu(false);
+    if (chapter && /^(muc-\d+|vi-du|kiem-tra)$/.test(sub ?? "")) {
+      const target = document.getElementById(sub);
+      if (target) {
+        target.setAttribute("tabindex", "-1");
+        target.focus({ preventScroll: true });
+        target.scrollIntoView();
+      }
+    } else if (requested !== "main") {
+      window.scrollTo(0, 0);
+      if (previousRoute) main.focus({ preventScroll: true });
+    }
+  }
+
+  menu.addEventListener("click", () => setMenu(!sidebar.classList.contains("is-open")));
+  overlay.addEventListener("click", () => { setMenu(false); menu.focus(); });
+  navigation.addEventListener("click", event => { if (event.target.closest("a")) setMenu(false); });
+  find("#search-open").addEventListener("click", openSearch);
+  searchInput.addEventListener("input", renderSearch);
+  find(".search-form").addEventListener("submit", event => {
+    if (event.submitter) return;
+    event.preventDefault();
+    searchResults.querySelector("a")?.click();
+  });
+  searchInput.addEventListener("keydown", event => {
+    if (event.key !== "Enter") return;
+    event.preventDefault();
+    searchResults.querySelector("a")?.click();
+  });
+  searchResults.addEventListener("click", event => {
+    const anchor = event.target.closest("a");
+    if (!anchor) return;
+    dialog.close();
+    if (location.hash === anchor.hash) render();
+  });
+  dialog.addEventListener("click", event => { if (event.target === dialog) dialog.close(); });
+  document.addEventListener("keydown", event => {
+    if (event.key === "Escape" && sidebar.classList.contains("is-open")) {
+      setMenu(false);
+      menu.focus();
+    }
+    if (event.key === "/" && !dialog.open && !event.altKey && !event.ctrlKey && !event.metaKey &&
+        !event.target.closest("input, textarea, select, [contenteditable]")) {
+      event.preventDefault();
+      openSearch();
+    }
+  });
+  find(".skip-link").addEventListener("click", event => {
+    event.preventDefault();
+    main.focus();
+  });
+  window.addEventListener("hashchange", render);
+  render();
+})();
