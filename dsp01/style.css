@@ -59,8 +59,11 @@ progress::-webkit-progress-value { background: #32795c; }
 progress::-moz-progress-bar { background: #32795c; }
 .workspace { margin-left: 258px; min-height: 100vh; display: flex; flex-direction: column; }
 .topbar { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 12px clamp(18px, 4vw, 52px); border-bottom: 1px solid var(--line); background: var(--bg); position: sticky; top: 0; z-index: 3; min-height: 65px; }
-.breadcrumb { font-size: 13px; color: var(--muted); }
+.breadcrumb { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13px; color: var(--muted); }
 .breadcrumb span { color: #829189; margin: 0 6px; }
+.topbar-actions { display: flex; align-items: center; flex: none; gap: 14px; }
+.byline { white-space: nowrap; font-size: 12px; color: var(--muted); }
+.byline strong { color: var(--green); font-weight: 650; }
 .search-trigger { display: flex; align-items: center; gap: 9px; border: 1px solid var(--line); background: white; border-radius: 9px; padding: 6px 9px; color: var(--muted); font-size: 13px; }
 .search-trigger:hover { border-color: #a4b7a8; }
 .search-trigger svg, .search-form svg, .icon-button svg, .nav-index svg { width: 17px; height: 17px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
@@ -222,7 +225,9 @@ dialog::backdrop { background: #101f1d70; }
 @media (max-width: 640px) {
   .topbar { padding: 9px 14px; min-height: 58px; }
   .search-trigger { min-height: 38px; }
-  .search-trigger span { display: none; }
+  .search-trigger span, .search-trigger kbd { display: none; }
+  .topbar-actions { gap: 9px; }
+  .byline { font-size: 11px; }
   .hero { grid-template-columns: 1fr; gap: 18px; }
   .hero-figure { max-width: 420px; width: 100%; margin-inline: auto; }
   .hero-figure svg { max-height: 155px; }
