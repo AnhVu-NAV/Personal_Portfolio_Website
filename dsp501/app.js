@@ -6,6 +6,7 @@
   const tracks = ["Nền tảng", "Phổ và thuật toán", "Bộ lọc và ứng dụng", "Phụ lục"];
   const titles = {
     "tong-quan": "Tổng quan",
+    "theo-slide": "Theo slide môn học",
     "cong-thuc": "Tra công thức",
     "mo-phong": "Mô phỏng",
     "tai-lieu": "Tài liệu và quy ước"
@@ -27,8 +28,65 @@
   const overlay = find(".menu-overlay");
   const searchResults = find("#search-results");
 
+  // Số bộ slide giữ theo tên tệp; số trang đếm từ bìa PDF.
+  const slideDecks = [
+    { number: 1, title: "Nhập môn DSP", file: "1_Introduction.pdf", chapterId: 1, topics: [
+      ["2–10", "DSP, hệ thống và phân loại tín hiệu", 0],
+      ["11–12", "Sóng cos, vòng/mẫu và radian/mẫu", 4],
+      ["13–15", "ADC, DAC và lấy mẫu đều", 3],
+      ["16–18", "Chồng tần, định lý lấy mẫu và nội suy", 6],
+      ["19–20", "Lượng tử hóa và mã hóa mẫu", 8]
+    ] },
+    { number: 2, title: "Tín hiệu và hệ thống rời rạc", file: "2_Discrete-Time Signals and Systems.pdf", chapterId: 2, topics: [
+      ["2–8", "Dãy cơ bản, phân loại và biến đổi chỉ số", 0],
+      ["9–14", "Tính chất của hệ và cách ghép hệ", 2],
+      ["15–20", "Phân rã thành xung và tổng tích chập", 3],
+      ["21–24", "Nhân quả, ổn định, FIR và IIR", 5],
+      ["25–28", "Thực hiện hệ rời rạc", 6],
+      ["29–31", "Tương quan chéo và tự tương quan", 9]
+    ] },
+    { number: 4, title: "Biến đổi Z", file: "4_The Z Transform and its application to the analysis of LTI Systems.pdf", chapterId: 3, topics: [
+      ["3–7", "Biến đổi Z thuận và miền hội tụ", 0],
+      ["8–9", "Biến đổi Z ngược và các tính chất", 4],
+      ["10–17", "Cực, điểm không và dạng đáp ứng theo thời gian", 3],
+      ["18", "Các cách tính biến đổi Z ngược", 4],
+      ["19–22", "Phân tích hệ LTI bằng biến đổi Z", 5]
+    ] },
+    { number: 5, title: "Phân tích tần số", file: "5_Frequency Analysis of Signals.pdf", chapterId: 4, topics: [
+      ["3–9", "Chuỗi Fourier liên tục và phổ công suất", 0],
+      ["10–13", "Biến đổi Fourier liên tục và phổ năng lượng", 1],
+      ["14–17", "Chuỗi Fourier của dãy tuần hoàn", 2],
+      ["18–23", "DTFT của dãy không tuần hoàn", 3],
+      ["24–27", "Quan hệ với biến đổi Z và băng thông", 9],
+      ["28–35", "Các tính chất biến đổi Fourier", 6]
+    ] },
+    { number: 6, title: "Biến đổi Fourier rời rạc (DFT)", file: "6_Discrete Fourier Transform.pdf", chapterId: 7, topics: [
+      ["3–8", "Lấy mẫu DTFT, DFT và IDFT", 0],
+      ["9–10", "Tính chất DFT và dịch vòng", 3],
+      ["11–12", "Lọc theo khối bằng overlap-save và overlap-add", 5],
+      ["13–18", "Dùng DFT để phân tích phổ", 6]
+    ] },
+    { number: 7, title: "Thuật toán FFT", file: "7_Efficient Computation of DFT_Fast Fourier Transform.pdf", chapterId: 8, topics: [
+      ["3–5", "Chia để trị và giảm số phép tính DFT", 0],
+      ["6–13", "FFT radix-2 và sơ đồ cánh bướm", 1],
+      ["14", "Thứ tự dữ liệu khi cài đặt FFT", 3],
+      ["15", "Ứng dụng FFT cho dãy thực", 4]
+    ] },
+    { number: 8, title: "Thiết kế bộ lọc FIR", file: "8_Design of Digital Filters FIR.pdf", chapterId: 10, topics: [
+      ["2–4", "Chọn bộ lọc và đọc đặc tả dải thông, dải chắn", 0],
+      ["5", "Đối xứng, phản đối xứng và pha tuyến tính", 1],
+      ["6–15", "Thiết kế FIR pha tuyến tính bằng cửa sổ", 2]
+    ] },
+    { number: 9, title: "Thiết kế bộ lọc IIR", file: "9_Design of Digital Filters IIR.pdf", chapterId: 10, topics: [
+      ["2–8", "Từ lọc tương tự sang IIR: sai phân lùi và bất biến xung", 5],
+      ["9", "Biến đổi song tuyến tính", 6],
+      ["10–16", "Các họ bộ lọc tương tự trong slide", 7]
+    ] }
+  ];
+
   const icons = {
     "tong-quan": '<path d="M3 10l9-7 9 7v10h-6v-6H9v6H3z"/>',
+    "theo-slide": '<path d="M3 4h18v13H3zM8 21l4-4 4 4M7 9h10M7 12h6"/>',
     "cong-thuc": '<path d="M7 4h11M7 20h11M7 4l7 8-7 8"/>',
     "mo-phong": '<path d="M3 13h4l3-7 4 12 3-5h4"/>',
     "tai-lieu": '<path d="M4 4h7v15H4zM13 4h7v15h-7z"/>'
@@ -117,7 +175,7 @@
       <div class="fact"><strong>${formulas.length}</strong><span>mục công thức</span></div>
       <div class="fact"><strong>${window.DSP_LABS.catalog.length}</strong><span>mô phỏng tương tác</span></div>
     </div>
-    <section aria-labelledby="roadmap"><div class="section-title"><div><div class="eyebrow">Lộ trình học</div><h2 id="roadmap">Từ nền tảng đến ứng dụng</h2></div><a class="text-link" href="#cong-thuc">Tra công thức <span aria-hidden="true">↗</span></a></div>
+    <section aria-labelledby="roadmap"><div class="section-title"><div><div class="eyebrow">Lộ trình học</div><h2 id="roadmap">Từ nền tảng đến ứng dụng</h2></div><a class="text-link" href="#theo-slide">Theo slide môn học <span aria-hidden="true">↗</span></a></div>
       <div class="track-grid">${groups}</div>
     </section>
     <div class="resource-row"><p>Sinh số ngẫu nhiên, bảng hệ số FIR và tài liệu tham khảo.</p><a class="text-link" href="#tai-lieu">Xem tài liệu <span aria-hidden="true">↗</span></a></div>`;
@@ -142,6 +200,9 @@
     </article>`).join("");
     const previous = chapters.find(item => item.id === chapter.id - 1);
     const next = chapters.find(item => item.id === chapter.id + 1);
+    const deckLinks = slideDecks.filter(deck => deck.chapterId === chapter.id).map(deck =>
+      `<a class="text-link" href="#theo-slide/bo-${deck.number}">Slide ${deck.number} · ${escape(deck.title)}</a>`
+    ).join("");
     const topicLinks = [1, 2, 6, 7, 8].includes(chapter.id) ? {
       1: ["lay-mau", "Thử mô phỏng lấy mẫu"],
       2: ["tich-chap", "Thử mô phỏng tích chập"],
@@ -152,7 +213,7 @@
     return `<div class="page-head">
       <div class="eyebrow">${chapter.id <= 13 ? "Chương " + pad(chapter.id) : "Phụ lục"} · ${escape(chapter.group)}</div>
       <h1>${escape(chapter.title)}</h1><p>${escape(chapter.intro)}</p>
-      <div class="chapter-meta"><span>${escape(chapter.en)}</span><span>Giáo trình, trang ${escape(chapter.pages)}</span></div>
+      <div class="chapter-meta"><span>${escape(chapter.en)}</span><span>Giáo trình, trang ${escape(chapter.pages)}</span>${deckLinks}</div>
       ${topicLinks ? `<div class="actions"><a class="button secondary" href="#mo-phong/${topicLinks[0]}">${topicLinks[1]} <span aria-hidden="true">↗</span></a></div>` : ""}
     </div>
     <div class="chapter-layout"><div>
@@ -245,13 +306,37 @@
       <li>Tùy sách hoặc thư viện, hệ số 1/N của DFT và chuẩn hóa sinc có thể đặt khác nhau. Mỗi phần giữ một cặp định nghĩa nhất quán.</li></ul></section>`;
   }
 
+  function slidesView() {
+    const links = slideDecks.map(deck => `<a class="tab" href="#theo-slide/bo-${deck.number}">Slide ${deck.number}</a>`).join("");
+    const decks = slideDecks.map(deck => {
+      const chapter = chapters.find(item => item.id === deck.chapterId);
+      const topics = deck.topics.map(([pages, topic, index]) => `<li>
+        <span class="slide-pages">Trang ${escape(pages)}</span>
+        <a class="text-link" href="${href(chapter, index)}">${escape(topic)} <span aria-hidden="true">↗</span></a>
+      </li>`).join("");
+      return `<section class="source-panel slide-deck" id="bo-${deck.number}">
+        <div class="eyebrow">Slide ${deck.number} · Chương ${chapter.id} của sách</div>
+        <h2>${escape(deck.title)}</h2>
+        <p class="slide-filename">${escape(deck.file)}</p>
+        <ul class="slide-topics">${topics}</ul>
+      </section>`;
+    }).join("");
+    return pageHead("DSP501 · Bài giảng", "Theo slide môn học",
+      "Chọn số ở đầu tên tệp trong thư mục DGT501. Số trang bên dưới tính từ bìa PDF. Bấm vào chủ đề để mở phần giải thích tương ứng trong Sổ tay.") +
+      `<nav class="tabs" aria-label="Chọn bộ slide">${links}</nav>${decks}`;
+  }
+
   const searchIndex = chapters.flatMap(chapter => [
     { title: chapter.title, sub: `Chương ${pad(chapter.id)} · ${chapter.en}`, target: href(chapter), body: chapter.intro },
     ...chapter.topics.map((topic, index) => ({
       title: topic.title, sub: `Mục ${pad(chapter.id)} · ${chapter.title}`, target: href(chapter, index),
       body: [topic.body, topic.formula, topic.note].join(" ")
     }))
-  ]).concat(window.DSP_LABS.catalog.map(lab => ({ title: lab.name, sub: "Phòng mô phỏng", body: lab.keywords, target: "#mo-phong/" + lab.id })))
+  ]).concat(window.DSP_LABS.catalog.map(lab => ({ title: lab.name, sub: "Phòng mô phỏng", body: lab.keywords, target: "#mo-phong/" + lab.id })),
+    slideDecks.map(deck => ({
+      title: `Slide ${deck.number} · ${deck.title}`, sub: "Theo slide môn học",
+      body: deck.file, target: "#theo-slide/bo-" + deck.number
+    })))
     .map(item => ({ ...item, titleKey: normalize(item.title), terms: normalize([item.title, item.sub, item.body].join(" ")) }));
 
   function renderSearch() {
@@ -294,6 +379,8 @@
     } else if (route === "cong-thuc") {
       main.innerHTML = formulaBank();
       attachFormulaBank();
+    } else if (route === "theo-slide") {
+      if (previousRoute !== route) main.innerHTML = slidesView();
     } else if (route === "mo-phong") {
       const current = window.DSP_LABS.catalog.find(lab => lab.id === sub) || window.DSP_LABS.catalog[0];
       main.innerHTML = labView(current);
@@ -306,7 +393,9 @@
     document.title = `${chapter ? chapter.title : titles[route]} · Sổ tay DSP`;
     renderNavigation();
     setMenu(false);
-    if (chapter && /^(muc-\d+|vi-du|kiem-tra)$/.test(sub ?? "")) {
+    const chapterAnchor = chapter && /^(muc-\d+|vi-du|kiem-tra)$/.test(sub ?? "");
+    const slideAnchor = route === "theo-slide" && /^bo-\d+$/.test(sub ?? "");
+    if (chapterAnchor || slideAnchor) {
       const target = document.getElementById(sub);
       if (target) {
         target.setAttribute("tabindex", "-1");

@@ -192,6 +192,11 @@ h2 { font: 500 clamp(26px, 3.5vw, 39px)/1.14 var(--serif); letter-spacing: -.035
 .source-panel h2 { font-size: clamp(23px,3vw,30px); margin-bottom: 8px; }
 .source-panel p + p { margin-top: 9px; }
 .source-panel ul { margin-bottom: 0; }
+.slide-deck .eyebrow { margin-bottom: 5px; }
+.slide-filename { color: var(--muted); overflow-wrap: anywhere; font: 13px/1.5 var(--mono); }
+.slide-topics { padding: 0; list-style: none; }
+.slide-topics li { display: grid; grid-template-columns: 100px minmax(0, 1fr); gap: 8px; align-items: baseline; padding: 8px 0; border-top: 1px solid var(--line); }
+.slide-pages { color: var(--muted); font: 12px/1.5 var(--mono); }
 .site-footer { width: min(100%, 1330px); margin: 0 auto; padding: 15px clamp(18px, 4vw, 52px) 20px; border-top: 1px solid var(--line); display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; color: var(--muted); font-size: 12px; }
 .site-footer a:hover { text-decoration: underline; }
 .footer-dot { padding: 0 3px; }
