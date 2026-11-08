@@ -16,7 +16,9 @@
     "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
   })[char]);
   const normalize = value => String(value ?? "").toLowerCase().normalize("NFD")
-    .replace(/\p{Diacritic}/gu, "").replace(/đ/g, "d");
+    .replace(/\p{Diacritic}/gu, "").replace(/đ/g, "d").replace(/[-_‐‑–—]/g, " ").replace(/\s+/g, " ").trim();
+  const keywordsFor = (chapter, index) => window.DSP_ENGLISH_KEYWORDS?.[chapter.id]?.[index] ?? "";
+  const keywordLine = value => value ? `<p class="keyword-line" lang="en">${escape(value)}</p>` : "";
   const href = (chapter, topic) => `#chuong-${chapter.id}${topic === undefined ? "" : "/muc-" + topic}`;
   const find = selector => document.querySelector(selector);
   const main = find("#main");
@@ -92,7 +94,9 @@
     "tai-lieu": '<path d="M4 4h7v15H4zM13 4h7v15h-7z"/>'
   };
 
-  const allTopics = chapters.flatMap(chapter => chapter.topics.map((topic, index) => ({ chapter, topic, index })));
+  const allTopics = chapters.flatMap(chapter => chapter.topics.map((topic, index) => ({
+    chapter, topic, index, keywords: keywordsFor(chapter, index)
+  })));
   const formulas = allTopics.filter(({topic}) => topic.formula);
   const readProgress = () => {
     try {
@@ -187,7 +191,7 @@
 
   function chapterView(chapter) {
     const topics = chapter.topics.map((topic, index) => `<article id="muc-${index}" class="topic">
-      <h3>${escape(topic.title)}</h3><p>${escape(topic.body)}</p>
+      <h3>${escape(topic.title)}</h3>${keywordLine(keywordsFor(chapter, index))}<p>${escape(topic.body)}</p>
       ${topic.formula ? `<code class="formula">${escape(topic.formula)}</code>` : ""}
       ${topic.note ? `<p class="note">${escape(topic.note)}</p>` : ""}
     </article>`).join("");
@@ -260,8 +264,8 @@
 
   function formulaBank() {
     const options = chapters.map(chapter => `<option value="${chapter.id}">${pad(chapter.id)} · ${escape(chapter.title)}</option>`).join("");
-    return pageHead("Tra nhanh", "Sổ công thức", "Lọc theo chương hoặc gõ một thuật ngữ. Mỗi công thức dẫn về phần giải thích và điều kiện áp dụng.") +
-      `<div class="filter-bar"><label>Từ khóa<input type="search" id="formula-query" placeholder="VD: Nyquist, tích chập, LPC…"></label>
+    return pageHead("Tra nhanh", "Sổ công thức", "Lọc theo chương hoặc tìm bằng tiếng Việt hay tiếng Anh. Mỗi công thức dẫn về phần giải thích và điều kiện áp dụng.") +
+      `<div class="filter-bar"><label>Từ khóa<input type="search" id="formula-query" placeholder="VD: tích chập, convolution, LPC…"></label>
       <label>Chương<select id="formula-chapter"><option value="">Tất cả</option>${options}</select></label></div>
       <p class="eyebrow" id="formula-count" aria-live="polite"></p><div class="formula-grid" id="formula-results"></div>`;
   }
@@ -271,14 +275,14 @@
     const chapterField = find("#formula-chapter");
     const renderCards = () => {
       const tokens = normalize(field.value).trim().split(/\s+/).filter(Boolean);
-      const found = formulas.filter(({ chapter, topic }) => {
-        const content = normalize([chapter.title, chapter.en, topic.title, topic.body, topic.formula, topic.note].join(" "));
+      const found = formulas.filter(({ chapter, topic, keywords }) => {
+        const content = normalize([chapter.title, chapter.en, topic.title, keywords, topic.body, topic.formula, topic.note].join(" "));
         return (!chapterField.value || chapter.id === Number(chapterField.value)) && tokens.every(token => content.includes(token));
       });
       find("#formula-count").textContent = `${found.length} mục công thức`;
-      find("#formula-results").innerHTML = found.length ? found.map(({ chapter, topic, index }) => `<article class="formula-card">
+      find("#formula-results").innerHTML = found.length ? found.map(({ chapter, topic, index, keywords }) => `<article class="formula-card">
         <div class="eyebrow">${pad(chapter.id)} · ${escape(chapter.title)}</div><h2>${escape(topic.title)}</h2>
-        <code class="formula">${escape(topic.formula)}</code><a class="text-link" href="${href(chapter, index)}">Mở phần giải thích <span aria-hidden="true">↗</span></a></article>`).join("") :
+        ${keywordLine(keywords)}<code class="formula">${escape(topic.formula)}</code><a class="text-link" href="${href(chapter, index)}">Mở phần giải thích <span aria-hidden="true">↗</span></a></article>`).join("") :
         '<p>Không có công thức khớp. Thử từ khóa ngắn hơn hoặc chọn tất cả chương.</p>';
     };
     field.addEventListener("input", renderCards);
@@ -327,31 +331,41 @@
   }
 
   const searchIndex = chapters.flatMap(chapter => [
-    { title: chapter.title, sub: `Chương ${pad(chapter.id)} · ${chapter.en}`, target: href(chapter), body: chapter.intro },
+    { title: chapter.title, sub: `Chương ${pad(chapter.id)}`, keywords: chapter.en, target: href(chapter), body: chapter.intro },
     ...chapter.topics.map((topic, index) => ({
       title: topic.title, sub: `Mục ${pad(chapter.id)} · ${chapter.title}`, target: href(chapter, index),
+      keywords: keywordsFor(chapter, index),
       body: [topic.body, topic.formula, topic.note].join(" ")
     }))
   ]).concat(window.DSP_LABS.catalog.map(lab => ({ title: lab.name, sub: "Phòng mô phỏng", body: lab.keywords, target: "#mo-phong/" + lab.id })),
     slideDecks.map(deck => ({
       title: `Slide ${deck.number} · ${deck.title}`, sub: "Theo slide môn học",
+      keywords: deck.file.replace(/^\d+_/, "").replace(/\.pdf$/i, "").replace(/_/g, " "),
       body: deck.file, target: "#theo-slide/bo-" + deck.number
     })))
-    .map(item => ({ ...item, titleKey: normalize(item.title), terms: normalize([item.title, item.sub, item.body].join(" ")) }));
+    .map(item => ({
+      ...item, titleKey: normalize(item.title),
+      keywordKeys: (item.keywords ?? "").split(",").map(normalize),
+      terms: normalize([item.title, item.sub, item.keywords, item.body].join(" "))
+    }));
 
   function renderSearch() {
     const query = normalize(searchInput.value).trim();
     if (!query) {
-      searchResults.innerHTML = "<p>Nhập tên chương, từ khóa hoặc ký hiệu. Ví dụ: <strong>mẫu trên chu kỳ</strong>, <strong>z-transform</strong>, <strong>FFT</strong>.</p>";
+      searchResults.innerHTML = "<p>Tìm bằng tiếng Việt hoặc tiếng Anh. Ví dụ <strong>mẫu trên chu kỳ</strong>, <strong>aliasing</strong>, <strong>region of convergence</strong>.</p>";
       return;
     }
     const tokens = query.split(/\s+/).filter(Boolean);
     const ranked = searchIndex.filter(item => tokens.every(token => item.terms.includes(token)))
       .sort((a, b) => score(b) - score(a)).slice(0, 12);
     function score(item) {
-      return (item.titleKey.includes(query) ? 20 : 0) + tokens.filter(token => item.titleKey.includes(token)).length;
+      const exactKeyword = item.keywordKeys.includes(query);
+      const partialKeyword = item.keywordKeys.some(keyword => keyword.includes(query));
+      return (item.titleKey === query ? 40 : item.titleKey.includes(query) ? 24 : 0)
+        + (exactKeyword ? 26 : partialKeyword ? 12 : 0)
+        + tokens.filter(token => item.titleKey.includes(token)).length;
     }
-    searchResults.innerHTML = ranked.length ? ranked.map(item => `<a class="search-result" href="${item.target}"><strong>${escape(item.title)}</strong><small>${escape(item.sub)}</small></a>`).join("") :
+    searchResults.innerHTML = ranked.length ? ranked.map(item => `<a class="search-result" href="${item.target}"><strong>${escape(item.title)}</strong><small>${escape(item.sub)}</small>${keywordLine(item.keywords)}</a>`).join("") :
       "<p>Chưa có kết quả. Thử một từ khóa ngắn hơn như DFT hoặc bộ lọc.</p>";
   }
 

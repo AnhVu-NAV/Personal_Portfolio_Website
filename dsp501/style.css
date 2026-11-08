@@ -137,6 +137,7 @@ h2 { font: 500 clamp(26px, 3.5vw, 39px)/1.14 var(--serif); letter-spacing: -.035
 .topic { padding: 17px 0; border-top: 1px solid var(--line); scroll-margin-top: 8px; }
 .topic h3, .example h3, .quiz h3 { font-size: 18px; line-height: 1.32; margin-bottom: 7px; letter-spacing: -.018em; }
 .topic p, .example, .pitfalls, .quiz, .source-panel { font-size: 15px; }
+.topic .keyword-line, .formula-card .keyword-line, .search-result .keyword-line { margin: 3px 0 6px; color: var(--muted); font-size: 12px; }
 .formula { display: block; max-width: 100%; white-space: pre-wrap; overflow-wrap: anywhere; margin: 11px 0 0; background: #eaf2e8; border-left: 3px solid #5b8f70; padding: 10px 12px; border-radius: 0 8px 8px 0; color: #183d32; font: 14px/1.66 var(--mono); }
 .topic .note { margin-top: 8px; color: var(--muted); font-size: 13px; }
 .example, .quiz, .source-panel, .lab-panel { border: 1px solid var(--line); border-radius: var(--radius); background: var(--paper); padding: clamp(14px, 2.4vw, 23px); }
