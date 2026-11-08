@@ -14,6 +14,7 @@
   <script defer src="chapters-10-13.js"></script>
   <script defer src="labs.js"></script>
   <script defer src="keywords.js"></script>
+  <script defer src="slide-gallery.js"></script>
   <script defer src="app.js"></script>
 </head>
 <body>
@@ -54,6 +55,21 @@
       <button type="submit" class="subtle-button" aria-label="Đóng tìm kiếm">Esc</button>
     </form>
     <div id="search-results" class="search-results" aria-live="polite"></div>
+  </dialog>
+  <dialog id="figure-viewer" aria-labelledby="figure-title">
+    <header class="figure-header">
+      <div><h2 id="figure-title"></h2><p id="figure-source"></p></div>
+      <form method="dialog"><button type="submit" class="button secondary">Đóng</button></form>
+    </header>
+    <div id="figure-image-area" class="figure-image-area" tabindex="0" aria-label="Vùng xem hình">
+      <img id="figure-large" alt="">
+    </div>
+    <div class="figure-controls">
+      <button type="button" id="figure-previous" class="button secondary">← Hình trước</button>
+      <output id="figure-position" aria-live="polite"></output>
+      <button type="button" id="figure-zoom" class="button secondary" aria-pressed="false">Phóng to</button>
+      <button type="button" id="figure-next" class="button secondary">Hình sau →</button>
+    </div>
   </dialog>
   <noscript><p class="noscript">Hãy bật JavaScript để đọc chương, làm bài tập và mở mô phỏng.</p></noscript>
 </body>

@@ -323,10 +323,14 @@
         <h2>${escape(deck.title)}</h2>
         <p class="slide-filename">${escape(deck.file)}</p>
         <ul class="slide-topics">${topics}</ul>
+        <details class="slide-figures" data-deck="${deck.number}" data-source="${escape(deck.file)}">
+          <summary>Hình, đồ thị và sơ đồ trong slide</summary>
+          <div class="slide-figure-content"></div>
+        </details>
       </section>`;
     }).join("");
     return pageHead("DSP501 · Bài giảng", "Theo slide môn học",
-      "Chọn số ở đầu tên tệp trong thư mục DGT501. Số trang bên dưới tính từ bìa PDF. Bấm vào chủ đề để mở phần giải thích tương ứng trong Sổ tay.") +
+      "Chọn số ở đầu tên tệp trong thư mục DGT501. Số trang tính từ bìa PDF. Bấm vào chủ đề để đọc bài tương ứng, hoặc mở bộ hình dưới từng slide để xem đồ thị gốc.") +
       `<nav class="tabs" aria-label="Chọn bộ slide">${links}</nav>${decks}`;
   }
 
@@ -394,7 +398,10 @@
       main.innerHTML = formulaBank();
       attachFormulaBank();
     } else if (route === "theo-slide") {
-      if (previousRoute !== route) main.innerHTML = slidesView();
+      if (previousRoute !== route) {
+        main.innerHTML = slidesView();
+        window.DSP_FIGURE_GALLERY?.mount(main);
+      }
     } else if (route === "mo-phong") {
       const current = window.DSP_LABS.catalog.find(lab => lab.id === sub) || window.DSP_LABS.catalog[0];
       main.innerHTML = labView(current);
@@ -449,7 +456,7 @@
       setMenu(false);
       menu.focus();
     }
-    if (event.key === "/" && !dialog.open && !event.altKey && !event.ctrlKey && !event.metaKey &&
+    if (event.key === "/" && !dialog.open && !find("#figure-viewer")?.open && !event.altKey && !event.ctrlKey && !event.metaKey &&
         !event.target.closest("input, textarea, select, [contenteditable]")) {
       event.preventDefault();
       openSearch();
