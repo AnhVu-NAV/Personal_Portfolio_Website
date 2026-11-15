@@ -7,6 +7,7 @@
   const titles = {
     "tong-quan": "Tổng quan",
     "theo-slide": "Theo slide môn học",
+    "python": "Thực hành Python",
     "cong-thuc": "Tra công thức",
     "mo-phong": "Mô phỏng",
     "tai-lieu": "Tài liệu và quy ước"
@@ -29,6 +30,7 @@
   const menu = find(".menu-button");
   const overlay = find(".menu-overlay");
   const searchResults = find("#search-results");
+  const pythonLessons = window.DSP_PYTHON_LESSONS;
 
   // Số bộ slide giữ theo tên tệp; số trang đếm từ bìa PDF.
   const slideDecks = [
@@ -89,6 +91,7 @@
   const icons = {
     "tong-quan": '<path d="M3 10l9-7 9 7v10h-6v-6H9v6H3z"/>',
     "theo-slide": '<path d="M3 4h18v13H3zM8 21l4-4 4 4M7 9h10M7 12h6"/>',
+    "python": '<path d="M8 6l-5 6 5 6M16 6l5 6-5 6M14 4l-4 16"/>',
     "cong-thuc": '<path d="M7 4h11M7 20h11M7 4l7 8-7 8"/>',
     "mo-phong": '<path d="M3 13h4l3-7 4 12 3-5h4"/>',
     "tai-lieu": '<path d="M4 4h7v15H4zM13 4h7v15h-7z"/>'
@@ -182,7 +185,7 @@
     <section aria-labelledby="roadmap"><div class="section-title"><div><div class="eyebrow">Lộ trình học</div><h2 id="roadmap">Từ nền tảng đến ứng dụng</h2></div><a class="text-link" href="#theo-slide">Theo slide môn học <span aria-hidden="true">↗</span></a></div>
       <div class="track-grid">${groups}</div>
     </section>
-    <div class="resource-row"><p>Sinh số ngẫu nhiên, bảng hệ số FIR và tài liệu tham khảo.</p><a class="text-link" href="#tai-lieu">Xem tài liệu <span aria-hidden="true">↗</span></a></div>`;
+    <div class="resource-row"><p>${pythonLessons.length} ví dụ Python theo slide, kèm notebook để chạy trên Jupyter hoặc Colab.</p><a class="text-link" href="#python">Thực hành Python <span aria-hidden="true">↗</span></a></div>`;
   }
 
   function pageHead(kicker, title, description) {
@@ -207,6 +210,7 @@
     const deckLinks = slideDecks.filter(deck => deck.chapterId === chapter.id).map(deck =>
       `<a class="text-link" href="#theo-slide/bo-${deck.number}">Slide ${deck.number} · ${escape(deck.title)}</a>`
     ).join("");
+    const firstPython = pythonLessons.find(lesson => lesson.chapter === chapter.id);
     const topicLinks = [1, 2, 6, 7, 8].includes(chapter.id) ? {
       1: ["lay-mau", "Thử mô phỏng lấy mẫu"],
       2: ["tich-chap", "Thử mô phỏng tích chập"],
@@ -218,6 +222,7 @@
       <div class="eyebrow">${chapter.id <= 13 ? "Chương " + pad(chapter.id) : "Phụ lục"} · ${escape(chapter.group)}</div>
       <h1>${escape(chapter.title)}</h1><p>${escape(chapter.intro)}</p>
       <div class="chapter-meta"><span>${escape(chapter.en)}</span><span>Giáo trình, trang ${escape(chapter.pages)}</span>${deckLinks}</div>
+      ${firstPython ? `<div class="actions"><a class="button secondary" href="#python/${firstPython.id}">Code Python liên quan <span aria-hidden="true">↗</span></a></div>` : ""}
       ${topicLinks ? `<div class="actions"><a class="button secondary" href="#mo-phong/${topicLinks[0]}">${topicLinks[1]} <span aria-hidden="true">↗</span></a></div>` : ""}
     </div>
     <div class="chapter-layout"><div>
@@ -323,6 +328,9 @@
         <h2>${escape(deck.title)}</h2>
         <p class="slide-filename">${escape(deck.file)}</p>
         <ul class="slide-topics">${topics}</ul>
+        <div class="actions">${pythonLessons.filter(lesson => lesson.decks.includes(deck.number)).map(lesson =>
+          `<a class="text-link" href="#python/${lesson.id}">Python · ${escape(lesson.title)} <span aria-hidden="true">↗</span></a>`
+        ).join("")}</div>
         <details class="slide-figures" data-deck="${deck.number}" data-source="${escape(deck.file)}">
           <summary>Hình, đồ thị và sơ đồ trong slide</summary>
           <div class="slide-figure-content"></div>
@@ -332,6 +340,60 @@
     return pageHead("DSP501 · Bài giảng", "Theo slide môn học",
       "Chọn số ở đầu tên tệp trong thư mục DGT501. Số trang tính từ bìa PDF. Bấm vào chủ đề để đọc bài tương ứng, hoặc mở bộ hình dưới từng slide để xem đồ thị gốc.") +
       `<nav class="tabs" aria-label="Chọn bộ slide">${links}</nav>${decks}`;
+  }
+
+  function pythonView() {
+    const lessons = pythonLessons.map(lesson => `<section class="source-panel python-lesson" id="${lesson.id}" data-slides="${lesson.decks.join(" ")}">
+      <div class="eyebrow">${lesson.decks.map(number => "Slide " + number).join(" · ")} · Python</div>
+      <h2>${escape(lesson.title)}</h2>
+      ${keywordLine(lesson.keywords)}
+      <p>${escape(lesson.intro)}</p>
+      <p><strong>Phần cần sửa theo đề.</strong> ${escape(lesson.change)}</p>
+      <div class="python-code-header"><span>Python 3</span><button type="button" class="button secondary python-copy" data-lesson="${lesson.id}">Sao chép code</button></div>
+      <pre class="python-code"><code>${escape(lesson.code)}</code></pre>
+      <p><strong>Kết quả cần quan sát.</strong> ${escape(lesson.expected)}</p>
+      ${lesson.note ? `<p class="python-note">${escape(lesson.note)}</p>` : ""}
+      <p><strong>Thử đổi tham số.</strong> ${escape(lesson.exercise)}</p>
+      <div class="actions"><a class="text-link" href="#chuong-${lesson.chapter}/muc-${lesson.topic}">Đọc công thức <span aria-hidden="true">↗</span></a>
+        ${lesson.decks.map(number => `<a class="text-link" href="#theo-slide/bo-${number}">Xem slide ${number} <span aria-hidden="true">↗</span></a>`).join("")}
+      </div>
+    </section>`).join("");
+    return pageHead("DSP501 · Code và notebook", "Thực hành Python",
+      "Mỗi ví dụ có code chạy độc lập, phần cần sửa theo đề và kết quả để tự đối chiếu. Mẫu mặt 3D biến đổi Z giữ cách viết của thầy em đã gửi.") +
+      `<section class="source-panel python-setup"><h2>Chạy trên Jupyter hoặc Google Colab</h2>
+        <p>Tải notebook rồi mở bằng Jupyter, hoặc vào Colab → File → Upload notebook. Chạy từng ô code theo thứ tự. Trên máy, cài các thư viện bằng lệnh dưới đây trong Terminal.</p>
+        <code class="formula">python -m pip install numpy matplotlib scipy jupyter</code>
+        <div class="actions"><a class="button primary" href="python/dsp501_theo_slide.ipynb" download>Tải notebook (.ipynb) <span aria-hidden="true">↓</span></a></div>
+      </section>
+      <div class="filter-bar python-filter"><label for="python-slide">Lọc theo bộ slide<select id="python-slide"><option value="">Tất cả slide</option>${slideDecks.map(deck => `<option value="${deck.number}">Slide ${deck.number} · ${escape(deck.title)}</option>`).join("")}</select></label></div>
+      <p class="python-copy-status" aria-live="polite"></p>${lessons}`;
+  }
+
+  function attachPython() {
+    find("#python-slide").addEventListener("change", event => {
+      const number = event.target.value;
+      main.querySelectorAll(".python-lesson").forEach(section => {
+        section.hidden = Boolean(number) && !section.dataset.slides.split(" ").includes(number);
+      });
+    });
+    main.querySelectorAll(".python-copy").forEach(button => button.addEventListener("click", async () => {
+      const lesson = pythonLessons.find(item => item.id === button.dataset.lesson);
+      const status = find(".python-copy-status");
+      try {
+        await navigator.clipboard.writeText(lesson.code);
+        button.textContent = "Đã sao chép";
+        status.textContent = `Đã sao chép code “${lesson.title}”.`;
+      } catch {
+        const code = button.closest(".python-lesson").querySelector("code");
+        const selection = window.getSelection();
+        const range = document.createRange();
+        range.selectNodeContents(code);
+        selection.removeAllRanges();
+        selection.addRange(range);
+        button.textContent = "Nhấn Ctrl+C";
+        status.textContent = "Code đã được chọn. Nhấn Ctrl+C hoặc dùng Sao chép trên điện thoại.";
+      }
+    }));
   }
 
   const searchIndex = chapters.flatMap(chapter => [
@@ -346,6 +408,10 @@
       title: `Slide ${deck.number} · ${deck.title}`, sub: "Theo slide môn học",
       keywords: deck.file.replace(/^\d+_/, "").replace(/\.pdf$/i, "").replace(/_/g, " "),
       body: deck.file, target: "#theo-slide/bo-" + deck.number
+    })),
+    pythonLessons.map(lesson => ({
+      title: `Python · ${lesson.title}`, sub: lesson.decks.map(n => "Slide " + n).join(" · "),
+      keywords: lesson.keywords, body: lesson.intro + " " + lesson.code, target: "#python/" + lesson.id
     })))
     .map(item => ({
       ...item, titleKey: normalize(item.title),
@@ -402,6 +468,11 @@
         main.innerHTML = slidesView();
         window.DSP_FIGURE_GALLERY?.mount(main);
       }
+    } else if (route === "python") {
+      if (previousRoute !== route) {
+        main.innerHTML = pythonView();
+        attachPython();
+      }
     } else if (route === "mo-phong") {
       const current = window.DSP_LABS.catalog.find(lab => lab.id === sub) || window.DSP_LABS.catalog[0];
       main.innerHTML = labView(current);
@@ -416,7 +487,12 @@
     setMenu(false);
     const chapterAnchor = chapter && /^(muc-\d+|vi-du|kiem-tra)$/.test(sub ?? "");
     const slideAnchor = route === "theo-slide" && /^bo-\d+$/.test(sub ?? "");
-    if (chapterAnchor || slideAnchor) {
+    const pythonAnchor = route === "python" && pythonLessons.some(lesson => lesson.id === sub);
+    if (pythonAnchor) {
+      find("#python-slide").value = "";
+      main.querySelectorAll(".python-lesson").forEach(section => { section.hidden = false; });
+    }
+    if (chapterAnchor || slideAnchor || pythonAnchor) {
       const target = document.getElementById(sub);
       if (target) {
         target.setAttribute("tabindex", "-1");

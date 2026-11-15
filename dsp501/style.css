@@ -198,6 +198,13 @@ h2 { font: 500 clamp(26px, 3.5vw, 39px)/1.14 var(--serif); letter-spacing: -.035
 .slide-topics { padding: 0; list-style: none; }
 .slide-topics li { display: grid; grid-template-columns: 100px minmax(0, 1fr); gap: 8px; align-items: baseline; padding: 8px 0; border-top: 1px solid var(--line); }
 .slide-pages { color: var(--muted); font: 12px/1.5 var(--mono); }
+.python-filter { margin-top: 20px; }
+.python-filter select { width: 100%; }
+.python-code-header { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 6px; margin-top: 14px; color: var(--muted); font-size: 13px; }
+.python-code { max-width: 100%; margin: 8px 0 14px; padding: 13px; border-radius: 9px; background: #edf3ed; color: #17382e; font: 13px/1.6 var(--mono); overflow-x: auto; tab-size: 4; }
+.python-lesson .keyword-line { margin: 3px 0 9px; color: var(--muted); font-size: 12px; }
+.python-lesson .python-note { color: var(--muted); font-size: 13px; }
+.python-copy-status { color: var(--green); font-size: 13px; }
 .slide-figures { margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--line); }
 .slide-figures summary { color: var(--green); cursor: pointer; font-weight: 650; }
 .slide-figure-content { margin-top: 12px; }
